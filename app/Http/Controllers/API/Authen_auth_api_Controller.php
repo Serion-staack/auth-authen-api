@@ -10,11 +10,14 @@ use App\Http\Requests\RegisterRequestUser;
 use App\Models\Refresh_token;
 use App\Models\User;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Jenssegers\Agent\Agent;
 
 /**
  * @OA\Info(
@@ -94,6 +97,7 @@ class Authen_auth_api_Controller extends Controller
             'phone_number' => $validated['phone_number'],
             'password' => Hash::make($validated['password']),
         ]);
+        $user->sendEmailVerificationNotification();
 
         return response()->json([
             'user' => $user,
@@ -144,12 +148,77 @@ class Authen_auth_api_Controller extends Controller
         else {
             Log::info('Email exists', ['email' => $request->email]);
         }
-        if (!Hash::check($request->password, $user->password)) {
+        if (!Hash::check($request->password, $user->password))
+        {
+            $user_Agent=$request->userAgent();
+            $ip=$request->header('X-Forwarded-For') ?? $request->ip();
+            $location=Http::get("https://ipinfo.io/{$ip}/json/")->json();
+            Log::info('Api location',$location);
+            /*$location=Http::get("https://ipapi.co/{$ip}/json/")->json();*/
+            try
+            {
+                $country_name=$location['country_name'] ?? null;
+                $country_code=$location['country_code'] ?? null;
+                $city=$location['city'] ?? null;
+                $region=$location['region'] ?? null;
+                $postal_code=$location['postal_code'] ?? null;
+                $latitude=$location['latitude'] ?? null;
+                $longitude=$location['longitude'] ?? null;
+                $region_code=$location['region_code'] ?? null;
+            }
+            catch (\Exception $e)
+            {
+                $country_code=null;
+                $country_name=null;
+                $region_code=null;
+                $region=null;
+                $city=null;
+                $postal_code=null;
+                $latitude=null;
+                $longitude=null;
+            }
+            $agent=new Agent();
+             $agent->setUserAgent($user_Agent);
+
+             if($agent->isMobile())
+             {
+                 $device_type='Mobile';
+             }
+             elseif ($agent->isTablet())
+             {
+                 $device_type='Tablet';
+             }
+             else
+             {
+                 $device_type='Desktop';
+             }
+
+            $deviceName = $agent->device();
+            $os = $agent->platform();
+            $browser = $agent->browser();
+            $osVersion = $agent->version($os);
+            $browserVersion = $agent->version($browser);
+            $created_at=Carbon::now() ?? '--' ;
+
             Log::warning('Login failed: invalid password',
                 [
                     'email' => $request->email,
-                    'ip' => $request->ip(),
-                    'user_agent' => $request->userAgent(),
+                    'ip' => $ip,
+                    'device_type' => $device_type,
+                    'country_name' => $country_name,
+                    'country_code' => $country_code,
+                    'city'=>$city,
+                    'user_agent' => $user_Agent,
+                    'osVersion' =>$os . ' ' . $osVersion,
+                    'browserVersion'=>$browserVersion,
+                    'browser' => $browser,
+                    'device' => $deviceName,
+                    'created_at' => $created_at,
+                    'region'=>$region,
+                    'postal_code'=>$postal_code,
+                    'latitude'=>$latitude,
+                    'longitude'=>$longitude,
+                    'region_code'=>$region_code,
                 ]);
             return response()->json(['message' => 'Invalid password'], 401);
         }
@@ -157,10 +226,13 @@ class Authen_auth_api_Controller extends Controller
             Log::info('Password correct', ['email' => $request->email]);
         }
 
-       /* if (!$user->hasVerifiedEmail()) {
+        if (!$user->hasVerifiedEmail()) {
             Log::warning('Login failed: email not verified', ['email' => $request->email]);
-            return response()->json(['message' => 'Email not verified'], 403);
-        }*/
+            return response()->json([
+                'message' => 'Email not verified',
+                'resend_verification'=>route('verification_send')
+            ], 403);
+        }
         Log::info('Login successful', ['email' => $request->email]);
         $token = $user->createToken('auth_token')->plainTextToken;
        /* $accessToken = $user->createToken('access_token', ['*'], now()->addHour())->plainTextToken;*/

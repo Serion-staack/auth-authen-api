@@ -10,7 +10,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasApiTokens;
@@ -66,11 +66,11 @@ class User extends Authenticatable
     public function IsStaff() : bool
     {
         return $this->user_type === UserTypesEnum::STAFF;
-    }
+    }*/
 
     public function hasVerifiedEmail()
     {
         return ! is_null($this->email_verified_at);
-    }*/
+    }
 
 }
