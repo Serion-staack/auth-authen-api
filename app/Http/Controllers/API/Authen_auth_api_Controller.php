@@ -379,7 +379,19 @@ class Authen_auth_api_Controller extends Controller
      */
     public function user(Request $request)
     {
-        return response()->json($request->user());
+        $user=$request->user();
+
+        return response()->json([
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone_number' => $user->phone_number,
+            'address' => $user->address,
+            'notes' => $user->notes,
+            'role_id' => $user->role_id,
+            'user_type' => $user->user_type,
+            'created_at' => $user->created_at,
+        ]);
     }
 
 
