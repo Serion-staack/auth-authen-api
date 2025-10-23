@@ -10,12 +10,14 @@ use App\Http\Requests\RegisterRequestUser;
 use App\Models\Refresh_token;
 use App\Models\User;
 
+use App\Notifications\OTPMail;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Jenssegers\Agent\Agent;
 
@@ -97,7 +99,6 @@ class Authen_auth_api_Controller extends Controller
             'phone_number' => $validated['phone_number'],
             'password' => Hash::make($validated['password']),
         ]);
-        $user->sendEmailVerificationNotification();
 
         return response()->json([
             'user' => $user,
@@ -154,7 +155,6 @@ class Authen_auth_api_Controller extends Controller
             $ip=$request->header('X-Forwarded-For') ?? $request->ip();
             $location=Http::get("https://ipinfo.io/{$ip}/json/")->json();
             Log::info('Api location',$location);
-            /*$location=Http::get("https://ipapi.co/{$ip}/json/")->json();*/
             try
             {
                 $country_name=$location['country_name'] ?? null;
@@ -226,13 +226,13 @@ class Authen_auth_api_Controller extends Controller
             Log::info('Password correct', ['email' => $request->email]);
         }
 
-        if (!$user->hasVerifiedEmail()) {
+       /* if (!$user->hasVerifiedEmail()) {
             Log::warning('Login failed: email not verified', ['email' => $request->email]);
             return response()->json([
                 'message' => 'Email not verified',
                 'resend_verification'=>route('verification_send')
             ], 403);
-        }
+        }*/
         Log::info('Login successful', ['email' => $request->email]);
         $token = $user->createToken('auth_token')->plainTextToken;
        /* $accessToken = $user->createToken('access_token', ['*'], now()->addHour())->plainTextToken;*/
@@ -381,4 +381,6 @@ class Authen_auth_api_Controller extends Controller
     {
         return response()->json($request->user());
     }
+
+
 }

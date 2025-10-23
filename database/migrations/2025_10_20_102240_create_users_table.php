@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\LocalesEnum;
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -16,6 +16,8 @@ return new class extends Migration
             $table->id();
             $table->string('name')->index();
             $table->string('email')->unique();
+            $table->integer('verification_code')->nullable();
+            $table->timestamp('verification_code_expired_at')->nullable();
             $table->string('notes')->nullable();
             $table->string('address')->nullable();
             $table->foreignId('role_id')->nullable()->index()->references('id')->on('roles');
