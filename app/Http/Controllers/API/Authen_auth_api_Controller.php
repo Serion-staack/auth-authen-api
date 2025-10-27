@@ -9,7 +9,6 @@ use App\Http\Requests\LoginRequestUser;
 use App\Http\Requests\RegisterRequestUser;
 use App\Models\Refresh_token;
 use App\Models\User;
-
 use App\Notifications\LoginMail;
 use App\Notifications\OTPMail;
 use App\Notifications\VerifyEmailNotification;
