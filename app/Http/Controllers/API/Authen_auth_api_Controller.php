@@ -12,6 +12,7 @@ use App\Models\User;
 
 use App\Notifications\LoginMail;
 use App\Notifications\OTPMail;
+use App\Notifications\VerifyEmailNotification;
 use Carbon\Carbon;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
@@ -139,6 +140,8 @@ class Authen_auth_api_Controller extends Controller
         'phone_number' => $request->phone_number,
         'password' => Hash::make($request->password),
     ]);
+
+    $user->notify(new VerifyEmailNotification());
 
 
     return response()->json([
@@ -309,7 +312,7 @@ class Authen_auth_api_Controller extends Controller
         }*/
         Log::info('Login successful', ['email' => $request->email]);
         return response()->json([
-            'message' => 'Please check your email',
+            'message' => 'Please check your email for login code',
             'email' => $user->email,
         ]);
     }
@@ -762,8 +765,6 @@ class Authen_auth_api_Controller extends Controller
              'message' => 'Get all users successfully',
              'count' => $user->count(),
              'users' => $user,
-
-
          ]);
      }
 

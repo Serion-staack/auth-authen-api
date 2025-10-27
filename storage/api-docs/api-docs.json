@@ -1222,41 +1222,19 @@
                 }
             }
         },
-        "/api/email/verification-notification": {
-            "post": {
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Resend email verification link",
-                "operationId": "d5d22620f2dd4f8bd7761f60f5347166",
-                "responses": {
-                    "200": {
-                        "description": "Verification email sent successfully"
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            }
-        },
         "/api/email/verify/{id}/{hash}": {
             "get": {
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Verify a user's email address",
-                "description": "Handles email verification requests. If the email is already verified, it returns a relevant message or redirects to the frontend. If not verified, it fulfills verification and redirects or responds with JSON.",
-                "operationId": "verifyEmail",
+                "summary": "Verify user's email",
+                "description": "Verifies a user's email using the ID and hash from the verification link.",
+                "operationId": "af70ed54fe222f58f5f510d845c8aa02",
                 "parameters": [
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "The ID of the user whose email is being verified",
+                        "description": "User ID",
                         "required": true,
                         "schema": {
                             "type": "integer",
@@ -1266,111 +1244,111 @@
                     {
                         "name": "hash",
                         "in": "path",
-                        "description": "The email verification hash",
+                        "description": "SHA1 hash of the user's email",
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "example": "abcdef1234567890"
+                            "example": "7c4a8d09ca3762af61e59520943dc26494f8941b"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Email verified or already verified (JSON response)",
+                        "description": "Email verified successfully or already verified",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "oneOf": [
-                                        {
-                                            "properties": {
-                                                "message": {
-                                                    "type": "string",
-                                                    "example": "Email verified successfully."
-                                                }
-                                            },
-                                            "type": "object"
-                                        },
-                                        {
-                                            "properties": {
-                                                "message": {
-                                                    "type": "string",
-                                                    "example": "Email already verified."
-                                                }
-                                            },
-                                            "type": "object"
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Email verified successfully."
                                         }
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "302": {
-                        "description": "Redirects to frontend confirmation page with status parameter",
-                        "headers": {
-                            "Location": {
-                                "description": "Frontend redirect URL (e.g., /email-verified?status=success or /email-verified?status=already_verified)",
-                                "schema": {
-                                    "type": "string",
-                                    "example": "https://your-frontend.com/email-verified?status=success"
+                                    },
+                                    "type": "object"
                                 }
                             }
                         }
                     },
                     "400": {
-                        "description": "Invalid or expired verification link"
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            }
-        },
-        "/api/email/generate-verification-url": {
-            "get": {
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Generate a temporary email verification link for the authenticated user",
-                "operationId": "c4623e90839a40ae936337bae37feb4d",
-                "responses": {
-                    "200": {
-                        "description": "Success response",
+                        "description": "Invalid verification link",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "oneOf": [
-                                        {
-                                            "properties": {
-                                                "verification_url": {
-                                                    "type": "string",
-                                                    "example": "http://localhost:8000/api/verify-email/1/9b7c7f03b3f75f7d1bb5cbfd7ad9f5b7f056882c?expires=1735300078&signature=..."
-                                                }
-                                            },
-                                            "type": "object"
-                                        },
-                                        {
-                                            "properties": {
-                                                "message": {
-                                                    "type": "string",
-                                                    "example": "Email already verified."
-                                                }
-                                            },
-                                            "type": "object"
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid verification link."
                                         }
-                                    ]
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "No query results for model [App\\\\Models\\\\User]."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/email/resend": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Resend email verification link",
+                "description": "Resends the email verification link to the authenticated user. Requires Bearer token authentication.",
+                "operationId": "4a1adfaa0c4e7947d4a530e8fc1a9587",
+                "responses": {
+                    "200": {
+                        "description": "Verification email resent or already verified",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Verification email resent."
+                                        }
+                                    },
+                                    "type": "object"
                                 }
                             }
                         }
                     },
                     "401": {
-                        "description": "Unauthenticated"
+                        "description": "Unauthorized - user not authenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Unauthenticated."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
                     {
-                        "sanctum": []
+                        "bearerAuth": []
                     }
                 ]
             }
