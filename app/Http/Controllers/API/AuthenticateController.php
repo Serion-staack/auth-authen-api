@@ -24,7 +24,7 @@ class AuthenticateController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/forgot-password",
+     *     path="/api/verification-code-password-reset",
      *     summary="Send Verification Code to user email for password reset",
      *     tags={"Auth"},
      *     @OA\RequestBody(
@@ -51,7 +51,7 @@ class AuthenticateController extends Controller
      * )
      */
 
-    public function forgetPassword(Request $request)
+    public function verificationCode(Request $request)
     {
         $request->validate([
             'email' => 'required|email',

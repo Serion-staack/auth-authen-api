@@ -14,7 +14,7 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->index();
+            $table->string('full_name')->index();
             $table->string('email')->unique();
             $table->integer('verification_code')->nullable();
             $table->timestamp('verification_code_expired_at')->nullable();
@@ -24,7 +24,9 @@ return new class extends Migration
             $table->tinyInteger('user_type')->index();
             $table->string('phone_number')->nullable();
             $table->string('password');
-            $table->dateTime('email_verified_at')->nullable();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->integer('login_code')->nullable();
+            $table->timestamp('login_code_expires_at')->nullable();
             $table->timestamps();
         });
     }
