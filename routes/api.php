@@ -8,8 +8,8 @@ use App\Http\Controllers\API\VerificationController;
 use Illuminate\Support\Facades\Route;
 
 
-Route::post('/register', [Authen_auth_api_Controller::class, 'register'])->middleware('throttle:5,1');
-Route::post('/login', [Authen_auth_api_Controller::class, 'login'])->middleware('throttle:5,1');
+Route::post('/register', [Authen_auth_api_Controller::class, 'register'])->middleware('throttle:3,1');
+Route::post('/login', [Authen_auth_api_Controller::class, 'login'])->middleware('throttle:3,1');
 Route::post('/refresh', [Authen_auth_api_Controller::class, 'refresh']);
 Route::post('/reset-password', [AuthenticateController::class, 'resetPassword']);
 Route::post('/verification-code', [AuthenticateController::class, 'verifyCode']);
@@ -17,6 +17,8 @@ Route::post('/verification-code-password-reset',[AuthenticateController::class, 
 Route::post('/verify-login-code',[Authen_auth_api_Controller::class, 'verifyLoginCode']);
 Route::get('/get_all_users', [Authen_auth_api_Controller::class, 'getAllUsers']);
 Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->name('verification.verify');
+Route::post('/reset_login_code', [Authen_auth_api_Controller::class, 'resetLoginCode'])->middleware('throttle:3,1');
+Route::post('/reset_verification_code', [AuthenticateController::class, 'resetVerificationCode'])->middleware('throttle:3,1');
 
 
 Route::middleware(['auth:sanctum','verified',\App\Http\Middleware\CheckAccessTokenExpiry::class])->group(function () {

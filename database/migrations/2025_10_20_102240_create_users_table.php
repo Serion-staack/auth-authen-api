@@ -16,7 +16,7 @@ return new class extends Migration
             $table->id();
             $table->string('full_name')->index();
             $table->string('email')->unique();
-            $table->integer('verification_code')->nullable();
+            $table->string('verification_code')->nullable();
             $table->timestamp('verification_code_expired_at')->nullable();
             $table->string('notes')->nullable();
             $table->string('address')->nullable();
@@ -25,7 +25,7 @@ return new class extends Migration
             $table->string('phone_number')->nullable();
             $table->string('password');
             $table->timestamp('email_verified_at')->nullable();
-            $table->integer('login_code')->nullable();
+            $table->string('login_code')->nullable();
             $table->timestamp('login_code_expires_at')->nullable();
             $table->timestamps();
         });

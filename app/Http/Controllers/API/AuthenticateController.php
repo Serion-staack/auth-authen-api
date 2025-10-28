@@ -63,7 +63,7 @@ class AuthenticateController extends Controller
             return response()->json(['error' => 'Email not found'], 401);
         }
         $verification_code = rand(100000, 999999);
-        $user->verification_code = $verification_code;
+        $user->verification_code = Hash::make($verification_code);
         $user->verification_code_expired_at = now()->addMinutes(2);
         $user->save();
         $user->notify(new OTPMail($verification_code));
@@ -124,7 +124,7 @@ class AuthenticateController extends Controller
             $user->save();
             return response()->json(['error' => 'Your verification code has been expired.'], 200);
         }
-        if($user->verification_code != $request->verification_code)
+        if(!Hash::check($request->verification_code,$user->verification_code))
         {
             return response()->json(['error' => 'Invalid Verification Code'], 401);
         }
@@ -253,5 +253,76 @@ class AuthenticateController extends Controller
         $user->save();
 
         return response()->json(['message' => 'Password reset successfully'], 200);
+    }
+    /**
+     * @OA\Post(
+     *     path="/api/reset_verification_code",
+     *     summary="Resend a new verification code to the user's email",
+     *     description="Sends a new 6-digit verification code if the previous one has expired.",
+     *     operationId="resetVerificationCode",
+     *     tags={"Authentication"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"email"},
+     *             @OA\Property(property="email", type="string", format="email", example="user@example.com")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="A new verification code has been sent to your email",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="A new verification code has been sent to your email")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Email not found or previous code still valid",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="error", type="string", example="Previous code is still valid, please wait until it expires")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="The given data was invalid."),
+     *             @OA\Property(
+     *                 property="errors",
+     *                 type="object",
+     *                 example={"email": {"The email field is required."}}
+     *             )
+     *         )
+     *     )
+     * )
+     */
+
+    public function resetVerificationCode(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $user=User::where('email',$request->email)->first();
+
+        if(!$user)
+        {
+            return response()->json(['error' => 'Email not found'], 401);
+        }
+
+        if($user->verification_code_expired_at && now()->lessThan($user->verification_code_expired_at))
+        {
+            return response()->json(['error' => 'Previous code is still valid,please wait until it expires'], 401);
+        }
+
+        $new_code=rand(100000, 999999);
+
+        $user->verification_code=Hash::make($new_code);
+        $user->verification_code_expired_at=now()->addMinutes(4);
+        $user->save();
+
+        $user->notify(new OTPMail($new_code));
+
+        return response()->json(['message' => 'A new verification code has been sent to your email'], 200);
     }
 }

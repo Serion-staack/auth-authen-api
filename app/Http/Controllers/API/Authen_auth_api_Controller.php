@@ -145,7 +145,7 @@ class Authen_auth_api_Controller extends Controller
 
     return response()->json([
         'user' => $user,
-        'message' => 'User registered successfully.Check email for verification code'], 201);
+        'message' => 'User registered successfully.Check email for verification link'], 201);
 }
 
     /**
@@ -293,7 +293,7 @@ class Authen_auth_api_Controller extends Controller
             Log::info('Password correct', ['email' => $request->email]);
         }
         $login_code=rand(100000,999999);
-        $user->login_code=$login_code;
+        $user->login_code=Hash::make($login_code);
         $user->login_code_expires_at=now()->addMinutes(2);
         $user->save();
 
@@ -311,7 +311,7 @@ class Authen_auth_api_Controller extends Controller
         }*/
         Log::info('Login successful', ['email' => $request->email]);
         return response()->json([
-            'message' => 'Please check your email for login code',
+            'message' => 'Please check your email for verification code',
             'email' => $user->email,
         ]);
     }
@@ -385,7 +385,7 @@ class Authen_auth_api_Controller extends Controller
           ]);
         }
 
-        if($user->login_code != $request->login_code || now()->greaterThan($user->login_code_expires_at))
+        if(!Hash::check($request->login_code,$user->login_code) || now()->greaterThan($user->login_code_expires_at))
         {
             return response()->json([
                 'message' => 'Invalid or expired login code'
@@ -399,7 +399,7 @@ class Authen_auth_api_Controller extends Controller
         /* $accessToken = $user->createToken('access_token', ['*'], now()->addHour())->plainTextToken;*/
 
         $tokenModel = $user->tokens()->latest()->first();
-        $tokenModel->expires_at = now()->addMinutes(1);
+        $tokenModel->expires_at = now()->addMinutes(2);
         $tokenModel->save();
 
 
@@ -407,7 +407,7 @@ class Authen_auth_api_Controller extends Controller
         Refresh_token::create([
             'user_id' => $user->id,
             'token' => hash('sha256', $refreshToken),
-            'expires_at' => now()->addMinutes(3),
+            'expires_at' => now()->addMinutes(4),
         ]);
 
         Log::info('User verified and logged in successfully', ['email' => $user->email]);
@@ -765,6 +765,79 @@ class Authen_auth_api_Controller extends Controller
              'count' => $user->count(),
              'users' => $user,
          ]);
+     }
+
+    /**
+     * @OA\Post(
+     *     path="/api/reset_login_code",
+     *     summary="Resend a new login code to the user's email",
+     *     description="Sends a new 6-digit login code if the previous one has expired.",
+     *     operationId="resetLoginCode",
+     *     tags={"Authentication"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"email"},
+     *             @OA\Property(property="email", type="string", format="email", example="user@example.com")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="A new login code has been sent to your email",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="A new login code has been sent to your email")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="User not found or previous code still valid",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Please wait until it expires")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="The given data was invalid."),
+     *             @OA\Property(
+     *                 property="errors",
+     *                 type="object",
+     *                 example={"email": {"The email field is required."}}
+     *             )
+     *         )
+     *     )
+     * )
+     */
+
+    public function resetLoginCode(Request $request)
+     {
+         $request->validate([
+             'email' => 'required|email',
+         ]);
+
+         $user=User::where('email',$request->email)->first();
+
+         if(!$user)
+         {
+             return response()->json(['message' => 'User not found']);
+         }
+
+         if($user->login_code_expires_at && now()->lessThan($user->login_code_expires_at))
+         {
+             return response()->json(['message' => 'Please wait until it expires']);
+         }
+
+         $newCode =rand(100000,999999);
+
+         $user->login_code = Hash::make($newCode);
+         $user->login_code_expires_at = now()->addMinutes(5);
+         $user->save();
+
+        $user->notify(new LoginMail($newCode));
+
+        return response()->json(['message' => 'A new login code has been sent to your email'], 200);
+
      }
 
 
