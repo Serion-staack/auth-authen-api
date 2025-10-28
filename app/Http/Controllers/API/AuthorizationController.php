@@ -35,7 +35,7 @@ use Jenssegers\Agent\Agent;
  */
 
 
-class Authen_auth_api_Controller extends Controller
+class AuthorizationController extends Controller
 {
 
     /**
