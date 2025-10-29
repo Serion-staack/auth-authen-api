@@ -53,8 +53,8 @@ class VerifyEmailNotification extends Notification
     {
         return URL::temporarySignedRoute(
             'verification.verify',
-            Carbon::now()->addMinutes(60),
-            ['id' => $notifiable->getKey(), 'hash' => sha1($notifiable->getEmailForVerification())]
+            Carbon::now()->addMinutes(3),
+            ['id' => $notifiable->getKey()]
         );
     }
     /**

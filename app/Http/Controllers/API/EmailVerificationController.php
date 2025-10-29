@@ -11,11 +11,12 @@ use Illuminate\Http\Request;
 
 class EmailVerificationController extends Controller
 {
+
     /**
      * @OA\Get(
-     *     path="/api/email/verify/{id}/{hash}",
+     *     path="/api/email/verify/{id}",
      *     summary="Verify user's email",
-     *     description="Verifies a user's email using the ID and hash from the verification link.",
+     *     description="Verifies a user's email using the ID from the signed verification link.",
      *     tags={"Auth"},
      *     @OA\Parameter(
      *         name="id",
@@ -23,13 +24,6 @@ class EmailVerificationController extends Controller
      *         required=true,
      *         description="User ID",
      *         @OA\Schema(type="integer", example=1)
-     *     ),
-     *     @OA\Parameter(
-     *         name="hash",
-     *         in="path",
-     *         required=true,
-     *         description="SHA1 hash of the user's email",
-     *         @OA\Schema(type="string", example="7c4a8d09ca3762af61e59520943dc26494f8941b")
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -39,10 +33,10 @@ class EmailVerificationController extends Controller
      *         )
      *     ),
      *     @OA\Response(
-     *         response=400,
-     *         description="Invalid verification link",
+     *         response=403,
+     *         description="Invalid or expired signed URL",
      *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Invalid verification link.")
+     *             @OA\Property(property="message", type="string", example="Invalid signature.")
      *         )
      *     ),
      *     @OA\Response(
@@ -54,13 +48,14 @@ class EmailVerificationController extends Controller
      *     )
      * )
      */
-    public function verify(Request $request, $id, $hash)
+
+    public function verify(Request $request, $id)
     {
         $user = User::findOrFail($id);
 
-        if (! hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+       /* if (! hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
             return response()->json(['message' => 'Invalid verification link.'], 400);
-        }
+        }*/
 
         if ($user->hasVerifiedEmail()) {
             return response()->json(['message' => 'Email already verified.'], 200);
@@ -75,29 +70,49 @@ class EmailVerificationController extends Controller
     /**
      * @OA\Post(
      *     path="/api/email/resend",
-     *     summary="Resend email verification link",
-     *     description="Resends the email verification link to the authenticated user. Requires Bearer token authentication.",
-     *     tags={"Auth"},
-     *     security={{"bearerAuth":{}}},
+     *     summary="Resend email verification",
+     *     description="Resends the email verification link to the user if the email is not verified yet.",
+     *     operationId="resendVerificationEmail",
+     *     tags={"Authentication"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"email"},
+     *             @OA\Property(property="email", type="string", format="email", example="user@example.com", description="The email of the user to resend verification link")
+     *         )
+     *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Verification email resent or already verified",
+     *         description="Successful operation",
      *         @OA\JsonContent(
      *             @OA\Property(property="message", type="string", example="Verification email resent.")
      *         )
      *     ),
      *     @OA\Response(
-     *         response=401,
-     *         description="Unauthorized - user not authenticated",
+     *         response=422,
+     *         description="Validation error",
      *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Unauthenticated.")
+     *             @OA\Property(property="message", type="string", example="The email field is required.")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="User not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="User not found.")
      *         )
      *     )
      * )
      */
     public function resend(Request $request)
     {
-        $user = $request->user();
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+        ]);
+
+        $user=User::where('email',$request->email)->first();
+
+        /*$user = $request->user();*/
 
         if ($user->hasVerifiedEmail()) {
             return response()->json(['message' => 'Email already verified.'], 200);

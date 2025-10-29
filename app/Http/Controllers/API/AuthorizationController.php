@@ -399,7 +399,7 @@ class AuthorizationController extends Controller
         /* $accessToken = $user->createToken('access_token', ['*'], now()->addHour())->plainTextToken;*/
 
         $tokenModel = $user->tokens()->latest()->first();
-        $tokenModel->expires_at = now()->addMinutes(2);
+        $tokenModel->expires_at = now()->addMinutes(10);
         $tokenModel->save();
 
 
@@ -407,17 +407,16 @@ class AuthorizationController extends Controller
         Refresh_token::create([
             'user_id' => $user->id,
             'token' => hash('sha256', $refreshToken),
-            'expires_at' => now()->addMinutes(4),
+            'expires_at' => now()->addMinutes(20),
         ]);
 
-        Log::info('User verified and logged in successfully', ['email' => $user->email]);
+        Log::info('User verified successfully', ['email' => $user->email]);
 
         return response()->json([
             'message' => 'Login successful',
             'access_token' => $token,
             'token_type' => 'Bearer',
             'refresh_token' => $refreshToken,
-            'expires_in' => 3600,
             'user_id' => $user->id,
         ]);
     }

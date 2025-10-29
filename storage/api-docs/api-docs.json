@@ -1398,14 +1398,14 @@
                 }
             }
         },
-        "/api/email/verify/{id}/{hash}": {
+        "/api/email/verify/{id}": {
             "get": {
                 "tags": [
                     "Auth"
                 ],
                 "summary": "Verify user's email",
-                "description": "Verifies a user's email using the ID and hash from the verification link.",
-                "operationId": "af70ed54fe222f58f5f510d845c8aa02",
+                "description": "Verifies a user's email using the ID from the signed verification link.",
+                "operationId": "0fda761a80b41057b30643e6396b3ce2",
                 "parameters": [
                     {
                         "name": "id",
@@ -1415,16 +1415,6 @@
                         "schema": {
                             "type": "integer",
                             "example": 1
-                        }
-                    },
-                    {
-                        "name": "hash",
-                        "in": "path",
-                        "description": "SHA1 hash of the user's email",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "example": "7c4a8d09ca3762af61e59520943dc26494f8941b"
                         }
                     }
                 ],
@@ -1445,15 +1435,15 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "Invalid verification link",
+                    "403": {
+                        "description": "Invalid or expired signed URL",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
                                         "message": {
                                             "type": "string",
-                                            "example": "Invalid verification link."
+                                            "example": "Invalid signature."
                                         }
                                     },
                                     "type": "object"
@@ -1483,14 +1473,35 @@
         "/api/email/resend": {
             "post": {
                 "tags": [
-                    "Auth"
+                    "Authentication"
                 ],
-                "summary": "Resend email verification link",
-                "description": "Resends the email verification link to the authenticated user. Requires Bearer token authentication.",
-                "operationId": "4a1adfaa0c4e7947d4a530e8fc1a9587",
+                "summary": "Resend email verification",
+                "description": "Resends the email verification link to the user if the email is not verified yet.",
+                "operationId": "resendVerificationEmail",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "description": "The email of the user to resend verification link",
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "user@example.com"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
-                        "description": "Verification email resent or already verified",
+                        "description": "Successful operation",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1505,15 +1516,31 @@
                             }
                         }
                     },
-                    "401": {
-                        "description": "Unauthorized - user not authenticated",
+                    "422": {
+                        "description": "Validation error",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
                                         "message": {
                                             "type": "string",
-                                            "example": "Unauthenticated."
+                                            "example": "The email field is required."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User not found."
                                         }
                                     },
                                     "type": "object"
@@ -1521,12 +1548,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
+                }
             }
         }
     },

@@ -16,13 +16,14 @@ Route::post('/verification-code', [AuthenticateController::class, 'verifyCode'])
 Route::post('/verification-code-password-reset',[AuthenticateController::class, 'verificationCode']);
 Route::post('/verify-login-code',[AuthorizationController::class, 'verifyLoginCode']);
 Route::get('/get_all_users', [AuthorizationController::class, 'getAllUsers']);
-Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->name('verification.verify');
+Route::get('/email/verify/{id}', [EmailVerificationController::class, 'verify'])->middleware(['signed'])->name('verification.verify');
 Route::post('/reset_login_code', [AuthorizationController::class, 'resetLoginCode'])->middleware('throttle:3,1');
 Route::post('/reset_verification_code', [AuthenticateController::class, 'resetVerificationCode'])->middleware('throttle:3,1');
+Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->middleware('throttle:3,1')->name('verification.resend');
+
 
 
 Route::middleware(['auth:sanctum','verified',\App\Http\Middleware\CheckAccessTokenExpiry::class])->group(function () {
-    Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->name('verification.resend');
     Route::post('/change-password',[AuthenticateController::class, 'changePassword']);
     Route::post('/logout', [AuthorizationController::class, 'logout']);
     Route::get('/user', [AuthorizationController::class, 'user']);
