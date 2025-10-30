@@ -27,6 +27,7 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('login_code')->nullable();
             $table->timestamp('login_code_expires_at')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }
