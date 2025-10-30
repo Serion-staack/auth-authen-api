@@ -117,7 +117,7 @@ class AuthorizationController extends Controller
     public function register(Request $request)
 {
     $request->validate([
-        'full_name' => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z0-9]+$/', 'not_in:password,name,email'],
+        'full_name' => ['required', 'string', 'max:255','regex:/^[\pL\pN ]+$/u', 'not_in:password,name,email'],
         'email' => ['required', 'email', 'unique:users,email'],
         'notes' => ['nullable', 'string', 'max:500'],
         'address' => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z0-9\s,\.#-]+$/'],
