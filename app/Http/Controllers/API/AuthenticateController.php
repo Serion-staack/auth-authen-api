@@ -233,7 +233,7 @@ class AuthenticateController extends Controller
     {
         $request->validate([
             'email' => 'required|email',
-            'password' => 'required|min:8',
+            'password' => 'required|string|min:12|regex:/[0-9]/|regex:/[A-Z]/|regex:/[a-z]/|regex:/[@$!%*#?&]/',
             'verification_code' => 'required|digits:6',
         ]);
 
@@ -244,12 +244,18 @@ class AuthenticateController extends Controller
             return response()->json(['error' => 'Email not found'], 401);
         }
 
-        if($user->email != $request->email)
+       /* if($user->email != $request->email)
         {
             return response()->json(['error' => 'Invalid Verification Code'], 401);
+        }*/
+
+        if(!$user->verification_code || !$user->verification_code_expired_at || now()->greaterThan($user->verification_code_expired_at) || !Hash::check($request->verification_code, $user->verification_code)) {
+            return response()->json(['error' => 'Invalid or expired verification code'], 401);
         }
-        $user->password=bcrypt($request->password);
+
+        $user->password=Hash::make($request->password);
         $user->verification_code=null;
+        $user->verification_code_expired_at	=null;
         $user->save();
 
         return response()->json(['message' => 'Password reset successfully'], 200);
