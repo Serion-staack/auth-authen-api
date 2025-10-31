@@ -320,14 +320,15 @@ class AuthorizationController extends Controller
      * @OA\Post(
      *     path="/api/verify-login-code",
      *     summary="Verify 2FA code and generate tokens",
-     *     description="Verifies a 6-digit login code sent via email. If valid, returns an access token and refresh token.",
+     *     description="Verifies a 6-digit login code sent via email. If valid, returns an access token and refresh token. Supports 'remember me' for extended token lifetime.",
      *     tags={"Auth"},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
      *             required={"email", "login_code"},
      *             @OA\Property(property="email", type="string", format="email", example="user@example.com"),
-     *             @OA\Property(property="login_code", type="integer", example=123456)
+     *             @OA\Property(property="login_code", type="integer", example=123456),
+     *             @OA\Property(property="remember", type="boolean", example=true, description="Set to true to enable 'Remember Me' (extends refresh token validity to 7 days).")
      *         )
      *     ),
      *     @OA\Response(
@@ -338,8 +339,10 @@ class AuthorizationController extends Controller
      *             @OA\Property(property="access_token", type="string", example="1|K2d39sOZ1Fd..."),
      *             @OA\Property(property="refresh_token", type="string", example="zU31saSDF9xA7..."),
      *             @OA\Property(property="token_type", type="string", example="Bearer"),
-     *             @OA\Property(property="expires_in", type="integer", example=3600),
-     *             @OA\Property(property="user_id", type="integer", example=1)
+     *             @OA\Property(property="remember", type="boolean", example=true),
+     *             @OA\Property(property="user_id", type="integer", example=1),
+     *             @OA\Property(property="access_token_expires_at", type="string", format="date-time", example="2025-10-31T15:22:10Z"),
+     *             @OA\Property(property="refresh_token_expires_at", type="string", format="date-time", example="2025-11-07T15:22:10Z")
      *         )
      *     ),
      *     @OA\Response(
@@ -364,12 +367,14 @@ class AuthorizationController extends Controller
      *             @OA\Property(
      *                 property="errors",
      *                 type="object",
-     *                 @OA\Property(property="email", type="array", @OA\Items(type="string", example="The email field is required."))
+     *                 @OA\Property(property="email", type="array", @OA\Items(type="string", example="The email field is required.")),
+     *                 @OA\Property(property="login_code", type="array", @OA\Items(type="string", example="The login code field is required."))
      *             )
      *         )
      *     )
      * )
      */
+
 
     public function verifyLoginCode(Request $request)
     {
@@ -395,11 +400,18 @@ class AuthorizationController extends Controller
         $user->login_code_expires_at = null;
         $user->save();
 
+        $remember=$request->boolean('remember');
+
+        $accessTokenExpiry=now()->addMinutes(10);
+
+        $refreshTokenExpiry = $remember ? now()->addDays(7) : now()->addMinutes(20);
+
         $token = $user->createToken('auth_token')->plainTextToken;
+
         /* $accessToken = $user->createToken('access_token', ['*'], now()->addHour())->plainTextToken;*/
 
         $tokenModel = $user->tokens()->latest()->first();
-        $tokenModel->expires_at = now()->addMinutes(10);
+        $tokenModel->expires_at = $accessTokenExpiry;
         $tokenModel->save();
 
 
@@ -407,10 +419,11 @@ class AuthorizationController extends Controller
         Refresh_token::create([
             'user_id' => $user->id,
             'token' => hash('sha256', $refreshToken),
-            'expires_at' => now()->addMinutes(20),
+            'expires_at' => $refreshTokenExpiry,
         ]);
 
-        Log::info('User verified successfully', ['email' => $user->email]);
+
+        Log::info('User verified successfully', ['email' => $user->email,'remember' => $remember]);
 
         return response()->json([
             'message' => 'Login successful',
@@ -418,6 +431,9 @@ class AuthorizationController extends Controller
             'token_type' => 'Bearer',
             'refresh_token' => $refreshToken,
             'user_id' => $user->id,
+            'remember' => $remember,
+            'access_token_expires_at' => $accessTokenExpiry,
+            'refresh_token_expires_at' => $refreshTokenExpiry,
         ]);
     }
 

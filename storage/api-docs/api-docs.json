@@ -696,7 +696,7 @@
                     "Auth"
                 ],
                 "summary": "Verify 2FA code and generate tokens",
-                "description": "Verifies a 6-digit login code sent via email. If valid, returns an access token and refresh token.",
+                "description": "Verifies a 6-digit login code sent via email. If valid, returns an access token and refresh token. Supports 'remember me' for extended token lifetime.",
                 "operationId": "9765a042fc36095be34567dd1dbed577",
                 "requestBody": {
                     "required": true,
@@ -716,6 +716,11 @@
                                     "login_code": {
                                         "type": "integer",
                                         "example": 123456
+                                    },
+                                    "remember": {
+                                        "description": "Set to true to enable 'Remember Me' (extends refresh token validity to 7 days).",
+                                        "type": "boolean",
+                                        "example": true
                                     }
                                 },
                                 "type": "object"
@@ -746,13 +751,23 @@
                                             "type": "string",
                                             "example": "Bearer"
                                         },
-                                        "expires_in": {
-                                            "type": "integer",
-                                            "example": 3600
+                                        "remember": {
+                                            "type": "boolean",
+                                            "example": true
                                         },
                                         "user_id": {
                                             "type": "integer",
                                             "example": 1
+                                        },
+                                        "access_token_expires_at": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": "2025-10-31T15:22:10Z"
+                                        },
+                                        "refresh_token_expires_at": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "example": "2025-11-07T15:22:10Z"
                                         }
                                     },
                                     "type": "object"
@@ -809,6 +824,13 @@
                                                     "items": {
                                                         "type": "string",
                                                         "example": "The email field is required."
+                                                    }
+                                                },
+                                                "login_code": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "The login code field is required."
                                                     }
                                                 }
                                             },
