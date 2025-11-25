@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\CheckAccessTokenExpiry;
+use App\Http\Middleware\Check_admin;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Auth\Middleware\Authorize;
 use Illuminate\Auth\Middleware\EnsureEmailIsVerified;
@@ -46,6 +47,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'token_expiry'     => CheckAccessTokenExpiry::class,
+            'is_admin'         => Check_admin::class,
             'verified'         => EnsureEmailIsVerified::class,
             'signed'           => ValidateSignature::class,
             'throttle'         => ThrottleRequests::class,

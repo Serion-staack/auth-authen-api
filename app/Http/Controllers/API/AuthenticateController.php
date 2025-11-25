@@ -195,8 +195,15 @@ class AuthenticateController extends Controller
               'password'=>Hash::make($validated['new_password'])
           ]);
 
+         $currentTokenId = $user->currentAccessToken()?->id;
+
+        $user->tokens()->when($currentTokenId, fn($q) => $q->where('id', '!=', $currentTokenId))
+        ->delete();
+
           return response()->json(['message' => 'Password Changed succesfully'], 200);
       }
+
+
 
     /**
      * @OA\Post(

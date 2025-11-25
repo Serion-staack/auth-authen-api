@@ -208,7 +208,7 @@ class AuthorizationController extends Controller
         ]);
         $user = User::where('email', $request->email)->first();
         if ($user == null) {
-          throw new \Exception('User not found');
+            return response()->json(['message' => 'Invalid credentials'], 401);
         }
         else {
             Log::info('Email exists', ['email' => $request->email]);
@@ -292,15 +292,6 @@ class AuthorizationController extends Controller
         else {
             Log::info('Password correct', ['email' => $request->email]);
         }
-        $login_code=rand(100000,999999);
-        $user->login_code=Hash::make($login_code);
-        $user->login_code_expires_at=now()->addMinutes(2);
-        $user->save();
-
-        $user->notify(new LoginMail($login_code));
-
-        Log::info('Login code sent successfully', ['email'=>$user->email,'login_code' => $login_code]);
-
 
         if (!$user->hasVerifiedEmail()) {
             Log::warning('Login failed: email not verified', ['email' => $request->email]);
@@ -309,7 +300,16 @@ class AuthorizationController extends Controller
                 'resend_verification'=>route('verification_send')
             ], 403);
         }
+
         Log::info('Login successful', ['email' => $request->email]);
+
+        $login_code=rand(100000,999999);
+        $user->login_code=Hash::make($login_code);
+        $user->login_code_expires_at=now()->addMinutes(2);
+        $user->save();
+
+        $user->notify(new LoginMail($login_code));
+
         return response()->json([
             'message' => 'Please check your email for verification code',
             'email' => $user->email,
@@ -384,10 +384,9 @@ class AuthorizationController extends Controller
         ]);
 
         $user=User::where('email',$request->email)->first();
-        if (!$user) {
-          return response()->json([
-              'message' => 'User not found'
-          ]);
+        if (!$user)
+        {
+            return response()->json(['message' => 'If this email exists, a code was sent'], 200);
         }
 
         if(!Hash::check($request->login_code,$user->login_code) || now()->greaterThan($user->login_code_expires_at))
@@ -481,7 +480,7 @@ class AuthorizationController extends Controller
         }
         $user = $stored->user;
         $stored->delete();
-        $user->tokens()->delete();
+       /* $user->tokens()->delete();*/
         $accessToken = $user->createToken('auth_token')->plainTextToken;
         $tokenModel = $user->tokens()->latest()->first();
         $tokenModel->expires_at = now()->addMinutes(1);
@@ -525,7 +524,9 @@ class AuthorizationController extends Controller
     {
         $user = $request->user();
 
-        $user->tokens()->delete();
+      /*  $user->tokens()->delete();*/
+        $user->currentAccessToken()->delete();
+
         Refresh_token::where('user_id', $user->id)->delete();
 
         return response()->json(['message' => 'Logged out successfully']);
@@ -835,12 +836,13 @@ class AuthorizationController extends Controller
 
          if(!$user)
          {
-             return response()->json(['message' => 'User not found']);
+             return response()->json(['message' => 'If this email exists, a code was sent.'],200);
+
          }
 
-         if($user->login_code_expires_at && now()->lessThan($user->login_code_expires_at))
+         if($user->login_code_expires_at && now()->lessThan($user->login_code_expires_at->subMinute()))
          {
-             return response()->json(['message' => 'Please wait until it expires']);
+             return response()->json(['message' => 'Please wait before requesting a new code'],429);
          }
 
          $newCode =rand(100000,999999);
@@ -851,9 +853,12 @@ class AuthorizationController extends Controller
 
         $user->notify(new LoginMail($newCode));
 
-        return response()->json(['message' => 'A new login code has been sent to your email'], 200);
+
+         return response()->json(['message' => 'A new login code has been sent to your email'], 200);
 
      }
+
+
 
 
 }
