@@ -218,7 +218,7 @@ class AuthorizationController extends Controller
             Log::warning('Wrong password',['email' => $request->email]);
             $user_Agent=$request->userAgent();
             $ip=$request->header('X-Forwarded-For') ?? $request->ip();
-            $location=Http::get("https://ipinfo.io/{$ip}/json/")->json();
+            $location=Http::timeout(5)->get("https://ipinfo.io/{$ip}/json/")->json();
 
             Log::info('Api location',$location);
             try
@@ -302,13 +302,13 @@ class AuthorizationController extends Controller
         Log::info('Login code sent successfully', ['email'=>$user->email,'login_code' => $login_code]);
 
 
-       /* if (!$user->hasVerifiedEmail()) {
+        if (!$user->hasVerifiedEmail()) {
             Log::warning('Login failed: email not verified', ['email' => $request->email]);
             return response()->json([
                 'message' => 'Email not verified',
                 'resend_verification'=>route('verification_send')
             ], 403);
-        }*/
+        }
         Log::info('Login successful', ['email' => $request->email]);
         return response()->json([
             'message' => 'Please check your email for verification code',
@@ -402,7 +402,7 @@ class AuthorizationController extends Controller
 
         $remember=$request->boolean('remember');
 
-        $accessTokenExpiry=now()->addMinutes(10);
+        $accessTokenExpiry=now()->addMinutes(15);
 
         $refreshTokenExpiry = $remember ? now()->addDays(7) : now()->addMinutes(20);
 
