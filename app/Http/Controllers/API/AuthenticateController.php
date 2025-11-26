@@ -64,7 +64,7 @@ class AuthenticateController extends Controller
         }
         $verification_code = rand(100000, 999999);
         $user->verification_code = Hash::make($verification_code);
-        $user->verification_code_expired_at = now()->addMinutes(2);
+        $user->verification_code_expired_at = now()->addMinutes(10);
         $user->save();
         $user->notify(new OTPMail($verification_code));
         return response()->json(['message' => 'Verification Code sent to your email'], 200);
@@ -258,6 +258,11 @@ class AuthenticateController extends Controller
 
         if(!$user->verification_code || !$user->verification_code_expired_at || now()->greaterThan($user->verification_code_expired_at) || !Hash::check($request->verification_code, $user->verification_code)) {
             return response()->json(['error' => 'Invalid or expired verification code'], 401);
+        }
+
+        if (Hash::check($request->password, $user->password))
+        {
+            return response()->json(['message' => 'The new password cannot be the same as the old password'], 400);
         }
 
         $user->password=Hash::make($request->password);

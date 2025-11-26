@@ -39,7 +39,7 @@ class VerifyEmailNotification extends Notification
     {
         $verificationUrl = $this->verificationUrl($notifiable);
 
-        Log::info("Email verification URL for {$notifiable->email}: $verificationUrl");
+//        Log::info("Email verification URL for {$notifiable->email}: $verificationUrl");
 
         return (new MailMessage)
             ->subject('Verify Your Email Address')
@@ -53,7 +53,7 @@ class VerifyEmailNotification extends Notification
     {
         return URL::temporarySignedRoute(
             'verification.verify',
-            Carbon::now()->addMinutes(3),
+            Carbon::now()->addMinutes(15),  // or = 30 minutes
             ['id' => $notifiable->getKey()]
         );
     }

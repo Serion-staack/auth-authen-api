@@ -217,7 +217,7 @@ class AuthorizationController extends Controller
         {
             Log::warning('Wrong password',['email' => $request->email]);
             $user_Agent=$request->userAgent();
-            $ip=$request->header('X-Forwarded-For') ?? $request->ip();
+            $ip=$request->ip();
             $location=Http::timeout(5)->get("https://ipinfo.io/{$ip}/json/")->json();
 
             Log::info('Api location',$location);
@@ -297,7 +297,8 @@ class AuthorizationController extends Controller
             Log::warning('Login failed: email not verified', ['email' => $request->email]);
             return response()->json([
                 'message' => 'Email not verified',
-                'resend_verification'=>route('verification_send')
+               /*'resend_verification'=>route('verification.resend')*/
+                'verification' => false,
             ], 403);
         }
 
@@ -483,14 +484,14 @@ class AuthorizationController extends Controller
        /* $user->tokens()->delete();*/
         $accessToken = $user->createToken('auth_token')->plainTextToken;
         $tokenModel = $user->tokens()->latest()->first();
-        $tokenModel->expires_at = now()->addMinutes(1);
+        $tokenModel->expires_at = now()->addMinutes(15);
         $tokenModel->save();
 
         $newRefresh = Str::random(64);
         Refresh_token::create([
             'user_id' => $user->id,
             'token' => hash('sha256', $newRefresh),
-            'expires_at' => now()->addMinutes(3),
+            'expires_at' => now()->addMinutes(60),
         ]);
 
         return response()->json([
@@ -524,8 +525,8 @@ class AuthorizationController extends Controller
     {
         $user = $request->user();
 
-      /*  $user->tokens()->delete();*/
-        $user->currentAccessToken()->delete();
+        $user->tokens()->delete();
+       /* $user->currentAccessToken()->delete();*/
 
         Refresh_token::where('user_id', $user->id)->delete();
 
@@ -840,7 +841,7 @@ class AuthorizationController extends Controller
 
          }
 
-         if($user->login_code_expires_at && now()->lessThan($user->login_code_expires_at->subMinute()))
+         if($user->login_code_expires_at && now()->lessThan($user->login_code_expires_at))
          {
              return response()->json(['message' => 'Please wait before requesting a new code'],429);
          }
