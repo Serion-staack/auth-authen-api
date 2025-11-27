@@ -389,14 +389,32 @@ class AuthorizationController extends Controller
             return response()->json(['message' => 'If this email exists, a code was sent'], 200);
         }
 
+        if ($user->login_blocked_until && now()->lessThan($user->login_blocked_until)) {
+            return response()->json([
+                'message' => 'Too many failed attempts. Please try again later.'
+            ], 429);
+        }
+
         if(!Hash::check($request->login_code,$user->login_code) || now()->greaterThan($user->login_code_expires_at))
         {
+            $user->login_attempts += 1;
+
+            if ($user->login_attempts >= 5)
+            {
+                $user->login_blocked_until = now()->addMinutes(5);
+                $user->login_attempts = 0;
+            }
+
+            $user->save();
+
             return response()->json([
                 'message' => 'Invalid or expired login code'
             ],401);
         }
         $user->login_code = null;
         $user->login_code_expires_at = null;
+        $user->login_attempts = 0;
+        $user->login_blocked_until = null;
         $user->save();
 
         $remember=$request->boolean('remember');

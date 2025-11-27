@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ChangePasswordRequest;
+use App\Models\Refresh_token;
 use App\Models\User;
 use App\Notifications\OTPMail;
 use Illuminate\Http\Request;
@@ -63,34 +64,33 @@ class AuthenticateController extends Controller
             return response()->json(['error' => 'Email not found'], 401);
         }
 
-        if ($user->password_reset_code_expires_at && now()->lessThan($user->password_reset_code_expires_at)) {
+        if ($user->verification_code_expired_at && now()->lessThan($user->verification_code_expired_at)) {
             return response()->json(['error' => 'A reset code is already active. Please wait until it expires.'], 429);
         }
 
-        $passwordResetCode = rand(100000, 999999);
+        $verification_code = rand(100000, 999999);
+        $user->verification_code = Hash::make($verification_code);
+        $user->verification_code_expired_at = now()->addMinutes(10);
 
-        $user->password_reset_code = Hash::make($passwordResetCode);
-
-        $user->password_reset_code_expired_at = now()->addMinutes(10);
 
         $user->save();
 
-        $user->notify(new OTPMail($passwordResetCode));
+        $user->notify(new OTPMail($verification_code));
 
         return response()->json(['message' => 'Password Reset Code sent to your email'], 200);
     }
 
     /**
      * @OA\Post(
-     *     path="/api/password-reset-code",
-     *     summary="Verify Password Reset Code for password reset",
+     *     path="/api/verification-code",
+     *     summary="Verify Verification Code for password reset",
      *     tags={"Auth"},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"email","password_reset_code"},
+     *             required={"email","verification_code"},
      *             @OA\Property(property="email", type="string", format="email", example="johndoe@example.com"),
-     *             @OA\Property(property="password_reset_code", type="integer", example=123456)
+     *             @OA\Property(property="verification_code", type="integer", example=123456)
      *         )
      *     ),
      *     @OA\Response(
@@ -113,7 +113,7 @@ class AuthenticateController extends Controller
     public function verifyCode(Request $request)
     {
         $request->validate([
-            'password_reset_code' => 'required|digits:6',
+            'verification_code' => 'required|digits:6',
             'email' => 'required|email',
         ]);
 
@@ -124,34 +124,33 @@ class AuthenticateController extends Controller
             return response()->json(['error' => 'Email not found'], 401);
         }
 
-        if(!$user->password_reset_code || !$user->password_reset_code_expired_at)
+        if(!$user->verification_code || !$user->verification_code_expired_at)
         {
-            return response()->json(['error' => 'No password reset code request found'], 401);
+            return response()->json(['error' => 'No verification code request found'], 401);
         }
 
-        if(now()->greaterThan($user->password_reset_code_expired_at))
+        if(now()->greaterThan($user->verification_code_expired_at))
         {
-            $user->password_reset_code = null;
+            $user->verification_code = null;
 
-            $user->password_reset_code_expired_at=null;
+            $user->verification_code_expired_at=null;
 
             $user->save();
 
-            return response()->json(['error' => 'Your password reset code has been expired.'], 200);
+            return response()->json(['error' => 'Your verification code has been expired.'], 200);
         }
 
-        if(!Hash::check($request->password_reset_code,$user->password_reset_code))
+        if(!Hash::check($request->verification_code,$user->verification_code))
         {
-            return response()->json(['error' => 'Invalid password reset code'], 401);
+            return response()->json(['error' => 'Invalid verification code'], 401);
         }
 
-        $user->password_reset_code = null;
+        //I ben null dhe nuk mund te besh dot ndrrimin e passw ,kur nuk je i loguar.
+        /*$user->verification_code = null;
+        $user->verification_code_expired_at=null;
+        $user->save();  */
 
-        $user->password_reset_code_expired_at=null;
-
-        $user->save();
-
-        return response()->json(['message' => 'Password reset code has been verified successfully'], 200);
+        return response()->json(['message' => 'verification Code has been verified successfully'], 200);
     }
 
     /**
@@ -197,7 +196,7 @@ class AuthenticateController extends Controller
       {
           $validated=$request->validated();
 
-          $user=$request->user();
+          $user = $request->user();
 
           if(!$user)
           {
@@ -294,6 +293,8 @@ class AuthenticateController extends Controller
 
         $user->tokens()->delete();
 
+        Refresh_token::where('user_id',$user->id)->delete();
+
         return response()->json(['message' => 'Password reset successfully'], 200);
     }
     /**
@@ -352,16 +353,16 @@ class AuthenticateController extends Controller
             return response()->json(['error' => 'Email not found'], 401);
         }
 
-        if($user->password_reset_code_expired_at && now()->lessThan($user->password_reset_code_expired_at))
+        if($user->verification_code_expired_at && now()->lessThan($user->verification_code_expired_at))
         {
             return response()->json(['error' => 'Previous code is still valid,please wait until it expires'], 401);
         }
 
         $new_code=rand(100000, 999999);
 
-        $user->password_reset_code = Hash::make($new_code);
+        $user->verification_code = Hash::make($new_code);
 
-        $user->password_reset_code_expired_at=now()->addMinutes(4);
+        $user->verification_code_expired_at=now()->addMinutes(4);
 
         $user->save();
 
