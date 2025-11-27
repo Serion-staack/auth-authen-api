@@ -134,7 +134,6 @@ class AuthorizationController extends Controller
         'email' => $request->email,
         'notes' =>$request->notes,
         'role_id' => $request->role_id,
-        'user_type' => UserTypesEnum::ADMIN,
         'address' => $request->address,
         'phone_number' => $request->phone_number,
         'password' => Hash::make($request->password),

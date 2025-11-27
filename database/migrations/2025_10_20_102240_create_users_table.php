@@ -21,7 +21,6 @@ return new class extends Migration
             $table->string('notes')->nullable();
             $table->string('address')->nullable();
             $table->foreignId('role_id')->nullable()->index()->references('id')->on('roles');
-            $table->tinyInteger('user_type')->index();
             $table->string('phone_number')->nullable();
             $table->string('password');
             $table->timestamp('email_verified_at')->nullable();

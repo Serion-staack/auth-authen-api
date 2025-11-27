@@ -17,14 +17,18 @@ class Check_admin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::user() && Auth::user()->user_type === UserTypesEnum::ADMIN) {
+        if (Auth::user() && Auth::user()->role_id === 1) {
             return $next($request);
         }
         else
         {
-            Auth::logout();
-        }
+          /*  Auth::logout(); */
 
-        return response()->json(['message' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
+            if($request->user() && $request->user()->currentAccessToken())
+            {
+                $request->user()->currentAccessToken()->delete();
+            }
+        }
+        return response()->json(['message' => 'You are not authorized for this action'], Response::HTTP_UNAUTHORIZED);
     }
 }

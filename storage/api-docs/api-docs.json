@@ -72,13 +72,13 @@
                 }
             }
         },
-        "/api/verification-code": {
+        "/api/password-reset-code": {
             "post": {
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Verify Verification Code for password reset",
-                "operationId": "e56b6ce0e59be8dc63b0c100248692e7",
+                "summary": "Verify Password Reset Code for password reset",
+                "operationId": "44cee21433ed311ce1764db9c104f0d8",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -86,7 +86,7 @@
                             "schema": {
                                 "required": [
                                     "email",
-                                    "verification_code"
+                                    "password_reset_code"
                                 ],
                                 "properties": {
                                     "email": {
@@ -94,7 +94,7 @@
                                         "format": "email",
                                         "example": "johndoe@example.com"
                                     },
-                                    "verification_code": {
+                                    "password_reset_code": {
                                         "type": "integer",
                                         "example": 123456
                                     }
@@ -241,7 +241,7 @@
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Reset user password using Verification_Code",
+                "summary": "Reset user password using Password_Reset_Code",
                 "operationId": "9f92e2c5ed246b32a8b152acf5b80e2e",
                 "requestBody": {
                     "required": true,
@@ -250,7 +250,7 @@
                             "schema": {
                                 "required": [
                                     "email",
-                                    "verification_code",
+                                    "password_reset_code",
                                     "password"
                                 ],
                                 "properties": {
@@ -259,7 +259,7 @@
                                         "format": "email",
                                         "example": "johndoe@example.com"
                                     },
-                                    "verification_code": {
+                                    "password_reset_code": {
                                         "type": "integer",
                                         "example": 123456
                                     },
@@ -310,7 +310,7 @@
                 }
             }
         },
-        "/api/reset_verification_code": {
+        "/api/reset_password_reset_code": {
             "post": {
                 "tags": [
                     "Authentication"
@@ -493,10 +493,6 @@
                                                 "role_id": {
                                                     "type": "integer",
                                                     "example": 2
-                                                },
-                                                "user_type": {
-                                                    "type": "string",
-                                                    "example": "ADMIN"
                                                 },
                                                 "address": {
                                                     "type": "string",

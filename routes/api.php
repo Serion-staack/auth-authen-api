@@ -7,7 +7,7 @@ use App\Http\Controllers\API\EmailVerificationController;
 use Illuminate\Support\Facades\Route;
 
 
-       Route::middleware('throttle:2,1')->group(function () {
+       Route::middleware('throttle:4,1')->group(function () {
          Route::post('/register', [AuthorizationController::class, 'register']);
          Route::post('/reset-password', [AuthenticateController::class, 'resetPassword']);
          Route::post('/verification-code-password-reset',[AuthenticateController::class, 'verificationCode']);
@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Route;
       });
 
 
-     Route::middleware('throttle:1,1')->group(function () {
+     Route::middleware('throttle:2,1')->group(function () {
       Route::post('/reset_login_code', [AuthorizationController::class, 'resetLoginCode']);
       Route::post('/reset_verification_code', [AuthenticateController::class, 'resetVerificationCode']);
       Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->name('verification.resend');
