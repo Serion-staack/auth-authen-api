@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enum\UserTypesEnum;
+use App\Notifications\ResetPasswordNotification;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -62,7 +63,9 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function sendPasswordResetNotification($token)
     {
-        $this->notify(new ResetPassword($token));
+      /*  $this->notify(new ResetPassword($token));             //kjo eshte vec per web*/
+
+        $this->notify(new ResetPasswordNotification($token));  //custom notification kur perdor API
 
     }
 
