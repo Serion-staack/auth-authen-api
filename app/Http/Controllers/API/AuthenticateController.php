@@ -9,6 +9,8 @@ use App\Models\User;
 use App\Notifications\OTPMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\ValidationException;
 
 
 class AuthenticateController extends Controller
@@ -23,36 +25,9 @@ class AuthenticateController extends Controller
      * )
      */
 
-    /**
-     * @OA\Post(
-     *     path="/api/verification-code-password-reset",
-     *     summary="Send Verification Code to user email for password reset",
-     *     tags={"Auth"},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"email"},
-     *             @OA\Property(property="email", type="string", format="email", example="johndoe@example.com")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Verification Code sent successfully",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Verification Code sent to your email")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Email not found",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="error", type="string", example="Email not found")
-     *         )
-     *     )
-     * )
-     */
 
-    public function verificationCode(Request $request)
+
+  /*  public function verificationCode(Request $request)
     {
         $request->validate([
             'email' => 'required|email',
@@ -78,39 +53,11 @@ class AuthenticateController extends Controller
         $user->notify(new OTPMail($verification_code));
 
         return response()->json(['message' => 'Password Reset Code sent to your email'], 200);
-    }
+    }*/   //1
 
-    /**
-     * @OA\Post(
-     *     path="/api/verification-code",
-     *     summary="Verify Verification Code for password reset",
-     *     tags={"Auth"},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"email","verification_code"},
-     *             @OA\Property(property="email", type="string", format="email", example="johndoe@example.com"),
-     *             @OA\Property(property="verification_code", type="integer", example=123456)
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Verification Code verified successfully",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Verification Code verified successfully")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Invalid Verification Code or email not found",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="error", type="string", example="Invalid Verification Code")
-     *         )
-     *     )
-     * )
-     */
 
-    public function verifyCode(Request $request)
+
+   /* public function verifyCode(Request $request)
     {
         $request->validate([
             'verification_code' => 'required|digits:6',
@@ -146,12 +93,12 @@ class AuthenticateController extends Controller
         }
 
         //I ben null dhe nuk mund te besh dot ndrrimin e passw ,kur nuk je i loguar.
-        /*$user->verification_code = null;
+        $user->verification_code = null;
         $user->verification_code_expired_at=null;
-        $user->save();  */
+        $user->save();
 
         return response()->json(['message' => 'verification Code has been verified successfully'], 200);
-    }
+    }*/    //2
 
     /**
      * @OA\Post(
@@ -226,38 +173,7 @@ class AuthenticateController extends Controller
 
 
 
-    /**
-     * @OA\Post(
-     *     path="/api/reset-password",
-     *     summary="Reset user password using Verification_Code",
-     *     tags={"Auth"},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"email","verification_code","password"},
-     *             @OA\Property(property="email", type="string", format="email", example="johndoe@example.com"),
-     *             @OA\Property(property="verification_code", type="integer", example=123456),
-     *             @OA\Property(property="password", type="string", format="password", example="newpassword123")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Password reset successfully",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Password reset successfully")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Invalid email or Verification Code",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="error", type="string", example="Invalid Verification Code")
-     *         )
-     *     )
-     * )
-     */
-
-    public function resetPassword(Request $request)
+   /* public function resetttPassword(Request $request)
     {
         $request->validate([
             'email' => 'required|email',
@@ -272,10 +188,11 @@ class AuthenticateController extends Controller
             return response()->json(['error' => 'Email not found'], 401);
         }
 
-       /* if($user->email != $request->email)
+        //Duhet komentuar
+        if($user->email != $request->email)
         {
             return response()->json(['error' => 'Invalid Verification Code'], 401);
-        }*/
+        }
 
         if(!$user->verification_code || !$user->verification_code_expired_at || now()->greaterThan($user->verification_code_expired_at) || !Hash::check($request->verification_code, $user->verification_code)) {
             return response()->json(['error' => 'Invalid or expired verification code'], 401);
@@ -296,7 +213,8 @@ class AuthenticateController extends Controller
         Refresh_token::where('user_id',$user->id)->delete();
 
         return response()->json(['message' => 'Password reset successfully'], 200);
-    }
+    }*/
+
     /**
      * @OA\Post(
      *     path="/api/reset_verification_code",
@@ -370,4 +288,5 @@ class AuthenticateController extends Controller
 
         return response()->json(['message' => 'A new verification code has been sent to your email'], 200);
     }
+
 }

@@ -20,7 +20,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Jenssegers\Agent\Agent;
 
 /**
@@ -875,6 +877,122 @@ class AuthorizationController extends Controller
          return response()->json(['message' => 'A new login code has been sent to your email'], 200);
 
      }
+
+    /**
+     * @OA\Post(
+     *     path="/api/password/forgot",
+     *     summary="Send password reset link",
+     *     description="Sends a password reset link to the user's email.",
+     *     tags={"Authentication"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"email"},
+     *             @OA\Property(property="email", type="string", format="email", example="user@example.com")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Password reset link sent successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Password reset link sent.")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error or email not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="email", type="array",
+     *                 @OA\Items(type="string", example="Email not found.")
+     *             )
+     *         )
+     *     )
+     * )
+     */
+
+    public function sendResetLink(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email'
+        ]);
+
+        $status = Password::sendResetLink($request->only('email'));
+
+        if ($status === Password::RESET_LINK_SENT) {
+            return response()->json([
+                'message' => 'Password reset link sent.'
+            ]);
+        }
+
+        throw ValidationException::withMessages([
+            'email' => __($status)
+        ]);
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/password/reset",
+     *     summary="Reset password using token",
+     *     description="Resets the user's password using the token received in email.",
+     *     tags={"Authentication"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"email","token","password","password_confirmation"},
+     *             @OA\Property(property="email", type="string", format="email", example="user@example.com"),
+     *             @OA\Property(property="token", type="string", example="1c9a6b3f..."),
+     *             @OA\Property(property="password", type="string", format="password", example="NewPassword123!"),
+     *             @OA\Property(property="password_confirmation", type="string", format="password", example="NewPassword123!")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Password reset successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Password reset successful.")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error or token invalid",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="email", type="array",
+     *                 @OA\Items(type="string", example="The password reset token is invalid.")
+     *             )
+     *         )
+     *     )
+     * )
+     */
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'token' => 'required',
+            'password' => 'required|min:8|confirmed'
+        ]);
+
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function ($user, $password) {
+                $user->forceFill([
+                    'password' => bcrypt($password)
+                ])->save();
+
+                $user->tokens()->delete();
+            }
+        );
+
+        if ($status === Password::PASSWORD_RESET) {
+            return response()->json([
+                'message' => 'Password reset successful.'
+            ]);
+        }
+
+        throw ValidationException::withMessages([
+            'email' => [__($status)]
+        ]);
+    }
 
 
 
