@@ -12,12 +12,16 @@ use Illuminate\Support\Facades\Route;
          /*Route::post('/verification-code', [AuthenticateController::class, 'verifyCode']); */   //2
          /*Route::post('/verification-code-password-reset',[AuthenticateController::class, 'verificationCode']);*/  //1
 
+
+
         Route::middleware('throttle:3,1')->group(function () {
-           Route::post('/register', [AuthorizationController::class, 'register']);
-           Route::post('/verify-login-code',[AuthorizationController::class, 'verifyLoginCode']);
+           Route::post('/register', [AuthorizationController::class, 'register']);   //1
+           Route::post('/verify-login-code',[AuthorizationController::class, 'verifyLoginCode']); //3
            Route::post('/password/forgot', [AuthorizationController::class, 'sendResetLink']);  //new
            Route::post('/password/reset', [AuthorizationController::class, 'resetPassword'])->name('password.reset');  //new
        });
+       Route::post('/login', [AuthorizationController::class, 'login'])->middleware('throttle:5,1');  //2
+
 
        Route::middleware('throttle:2,1')->group(function () {
           Route::post('/reset_login_code', [AuthorizationController::class, 'resetLoginCode']);
@@ -26,8 +30,8 @@ use Illuminate\Support\Facades\Route;
        });
 
 
-     Route::post('/login', [AuthorizationController::class, 'login'])->middleware('throttle:5,1');
      Route::get('/email/verify/{id}', [EmailVerificationController::class, 'verify'])->middleware(['signed'])->name('verification.verify');
+     Route::post('/refresh', [AuthorizationController::class, 'refresh']);
 
 
    Route::middleware(['auth:sanctum','verified','token_expiry'])->group(function ()
@@ -40,7 +44,7 @@ use Illuminate\Support\Facades\Route;
     Route::middleware(['is_admin'])->get('/get_all_users', [AuthorizationController::class, 'getAllUsers']);
     });
 
-    Route::middleware(['auth:sanctum','token_expiry'])->post('/refresh', [AuthorizationController::class, 'refresh']);
+
 
 
 

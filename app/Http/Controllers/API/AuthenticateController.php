@@ -166,7 +166,7 @@ class AuthenticateController extends Controller
 
           $user->tokens()->delete();
 
-          Refresh_token::where('user_id',$user->id)->delete();     //shtuar ketu
+          Refresh_token::where('user_id',$user->id)->delete();     //added here
 
          /*$currentTokenId = $user->currentAccessToken()?->id;
 
