@@ -12,6 +12,8 @@ class Refresh_token extends Model
         'user_id',
         'token',
         'expires_at',
+        'ip_address',
+        'user_agent',
     ];
 
     protected $casts = [

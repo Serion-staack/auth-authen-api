@@ -159,14 +159,19 @@ class AuthenticateController extends Controller
           {
               return response()->json(['error' => 'New Password cannot be same as your current password'], 401);
           }
+
           $user->update([
               'password'=>Hash::make($validated['new_password'])
           ]);
 
-         $currentTokenId = $user->currentAccessToken()?->id;
+          $user->tokens()->delete();
+
+          Refresh_token::where('user_id',$user->id)->delete();
+
+         /*$currentTokenId = $user->currentAccessToken()?->id;
 
         $user->tokens()->when($currentTokenId, fn($q) => $q->where('id', '!=', $currentTokenId))
-        ->delete();
+        ->delete();*/
 
           return response()->json(['message' => 'Password Changed succesfully'], 200);
       }
@@ -276,7 +281,7 @@ class AuthenticateController extends Controller
             return response()->json(['error' => 'Previous code is still valid,please wait until it expires'], 401);
         }
 
-        $new_code=rand(100000, 999999);
+        $new_code=random_int(100000, 999999);
 
         $user->verification_code = Hash::make($new_code);
 

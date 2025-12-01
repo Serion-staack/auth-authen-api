@@ -16,6 +16,8 @@ return new class extends Migration
             $table->foreignId('user_id')->references('id')->on('users');
             $table->string('token');
             $table->dateTime('expires_at');
+            $table->string('user_agent');
+            $table->string('ip_address');
             $table->timestamps();
         });
     }

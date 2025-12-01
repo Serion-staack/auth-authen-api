@@ -125,9 +125,7 @@ class AuthorizationController extends Controller
         'address' => ['required', 'string', 'max:255', 'regex:/^[a-zA-Z0-9\s,\.#-]+$/'],
         'phone_number' => ['required', 'regex:/^\+?[0-9]{8,15}$/'],
         'role_id' => ['required', 'integer', 'exists:roles,id'],
-        'password' => [
-            'required', 'string', 'min:12', 'confirmed',
-            'regex:/[0-9]/', 'regex:/[A-Z]/', 'regex:/[a-z]/', 'regex:/[@$!%*#?&]/',
+        'password' => ['required', 'string', 'min:12', 'confirmed', 'regex:/[0-9]/', 'regex:/[A-Z]/', 'regex:/[a-z]/', 'regex:/[@$!%*#?&]/',
         ],
     ]);
 
@@ -207,13 +205,18 @@ class AuthorizationController extends Controller
             'email' => 'required|email',
             'password' => 'required',
         ]);
+
         $user = User::where('email', $request->email)->first();
-        if ($user == null) {
+
+        if ($user == null)
+        {
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
-        else {
+        else
+        {
             Log::info('Email exists', ['email' => $request->email]);
         }
+
         if (!Hash::check($request->password, $user->password))
         {
             Log::warning('Wrong password',['email' => $request->email]);
@@ -294,18 +297,19 @@ class AuthorizationController extends Controller
             Log::info('Password correct', ['email' => $request->email]);
         }
 
-        if (!$user->hasVerifiedEmail()) {
+        if (!$user->hasVerifiedEmail())
+        {
             Log::warning('Login failed: email not verified', ['email' => $request->email]);
+
             return response()->json([
                 'message' => 'Email not verified',
-               /*'resend_verification'=>route('verification.resend')*/
                 'verification' => false,
             ], 403);
         }
 
         Log::info('Login successful', ['email' => $request->email]);
 
-        $login_code=rand(100000,999999);
+        $login_code=random_int(100000,999999);
         $user->login_code=Hash::make($login_code);
         $user->login_code_expires_at=now()->addMinutes(2);
         $user->save();
@@ -393,8 +397,7 @@ class AuthorizationController extends Controller
 
         if ($user->login_blocked_until && now()->lessThan($user->login_blocked_until)) {
             return response()->json([
-                'message' => 'Too many failed attempts. Please try again later.'
-            ], 429);
+                'message' => 'Too many failed attempts. Please try again later.'], 429);
         }
 
         if(!Hash::check($request->login_code,$user->login_code) || now()->greaterThan($user->login_code_expires_at))
@@ -419,25 +422,31 @@ class AuthorizationController extends Controller
         $user->login_blocked_until = null;
         $user->save();
 
+        $user->tokens()->delete();  //fshihet tokeni i vjeter dhe me pas gjenerohet token i ri,me qellimin qe te mos kete akoma akses me tokenin e vjeter ,por te marri aksesin me tokenin e ri.
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        /* $accessToken = $user->createToken('access_token', ['*'], now()->addHour())->plainTextToken;*/
+
         $remember=$request->boolean('remember');
 
         $accessTokenExpiry=now()->addMinutes(15);
 
         $refreshTokenExpiry = $remember ? now()->addDays(7) : now()->addMinutes(20);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        /* $accessToken = $user->createToken('access_token', ['*'], now()->addHour())->plainTextToken;*/
 
         $tokenModel = $user->tokens()->latest()->first();
         $tokenModel->expires_at = $accessTokenExpiry;
         $tokenModel->save();
 
 
-        $refreshToken = Str::random(64);
+        $refreshToken = Str::random(128);
+
         Refresh_token::create([
             'user_id' => $user->id,
             'token' => hash('sha256', $refreshToken),
+            'user_agent' => $request->userAgent(),
+            'ip_address' => $request->ip(),
             'expires_at' => $refreshTokenExpiry,
         ]);
 
@@ -492,25 +501,42 @@ class AuthorizationController extends Controller
         ]);
 
         $hashed = hash('sha256', $request->refresh_token);
+
         $stored = Refresh_token::where('token', $hashed)->first();
 
-        if (!$stored || $stored->expires_at->isPast()) {
+        if (!$stored || $stored->expires_at->isPast())
+        {
             if ($stored) $stored->delete();
             return response()->json(['message' => 'Invalid or expired refresh token'], 401);
         }
+
+        if($stored->user_agent !== $request->userAgent() || $stored->ip_address !== $request->ip())
+        {
+            return response()->json(['message' => 'Refresh token cannot be used by this device'], 401);
+        }
+
         $user = $stored->user;
+
         $stored->delete();
-       /* $user->tokens()->delete();*/
+
+        $user->tokens()->delete();
+
         $accessToken = $user->createToken('auth_token')->plainTextToken;
+
         $tokenModel = $user->tokens()->latest()->first();
+
         $tokenModel->expires_at = now()->addMinutes(15);
+
         $tokenModel->save();
 
         $newRefresh = Str::random(64);
+
         Refresh_token::create([
             'user_id' => $user->id,
             'token' => hash('sha256', $newRefresh),
             'expires_at' => now()->addMinutes(60),
+            'user_agent' => $request->userAgent(),
+            'ip_address' => $request->ip(),
         ]);
 
         return response()->json([
@@ -663,13 +689,13 @@ class AuthorizationController extends Controller
 
     public function updateUser(Request $request,$id)
     {
-       $user=$request->user();
+       $user = $request->user();
 
        if(!$user)
        {
            return response()->json(['message' => 'User not found']);
        }
-        $validated=$request->validate([
+        $validated = $request->validate([
            /* 'full_name'    =>  ['required', 'string', 'max:255', 'regex:/^[a-zA-Z0-9]+$/', 'not_in:password,name,email'],*/
             'email'        =>  ['sometimes', 'email', 'unique:users,email'],
             'notes'        =>  ['sometimes', 'string', 'max:500'],
@@ -740,17 +766,21 @@ class AuthorizationController extends Controller
      */
 
     public function deleteUser(Request $request,$id)
-     {
-         $user = $request->user();
-         if(!$user)
-         {
-             return response()->json(['message' => 'User not found']);
-         }
-         $user->tokens()->delete();
-         Refresh_token::where('user_id', $user->id)->delete();
-         $user->delete();
-         return response()->json(['message' => 'User deleted successfully']);
-     }
+{
+    $user = $request->user();
+
+    if(!$user)
+    {
+        return response()->json(['message' => 'User not found']);
+    }
+
+    $user->tokens()->delete();
+
+    Refresh_token::where('user_id', $user->id)->delete();
+
+    $user->delete();
+    return response()->json(['message' => 'User deleted successfully']);
+}
 
     /**
      * @OA\Get(
@@ -792,16 +822,16 @@ class AuthorizationController extends Controller
      */
 
     public function getAllUsers(Request $request)
-     {
+{
 
-         $user=User::whereIn('role_id',[1,2,3,4,5])->get(['id','full_name','email','phone_number','address','role_id','created_at']);
+    $user=User::whereIn('role_id',[1,2,3,4,5])->get(['id','full_name','email','phone_number','address','role_id','created_at']);
 
-         return response()->json([
-             'message' => 'Get all users successfully',
-             'count' => $user->count(),
-             'users' => $user,
-         ]);
-     }
+    return response()->json([
+        'message' => 'Get all users successfully',
+        'count' => $user->count(),
+        'users' => $user,
+    ]);
+}
 
     /**
      * @OA\Post(
@@ -865,7 +895,7 @@ class AuthorizationController extends Controller
              return response()->json(['message' => 'Please wait before requesting a new code'],429);
          }
 
-         $newCode =rand(100000,999999);
+         $newCode =random_int(100000,999999);
 
          $user->login_code = Hash::make($newCode);
          $user->login_code_expires_at = now()->addMinutes(5);

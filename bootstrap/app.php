@@ -52,7 +52,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'signed'           => ValidateSignature::class,
             'throttle'         => ThrottleRequests::class,
             'auth'             => Authenticate::class,
-            'password.confirm' => RequirePassword::class,
             'can'              => Authorize::class,
         ]);
     })

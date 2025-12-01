@@ -51,21 +51,26 @@ class EmailVerificationController extends Controller
 
     public function verify(Request $request, $id)
     {
+
+       if(!$request->hasValidSignature())
+       {
+           return response()->json(['message' => 'Invalid or expired verification link',]);
+       }
+
         $user = User::findOrFail($id);
 
-       /* if (! hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
-            return response()->json(['message' => 'Invalid verification link.'], 400);
-        }*/
-
-        if ($user->hasVerifiedEmail()) {
+        if ($user->hasVerifiedEmail())
+        {
             return response()->json(['message' => 'Email already verified.'], 200);
         }
 
         $user->markEmailAsVerified();
+
         event(new Verified($user));
 
         return response()->json(['message' => 'Email verified successfully.'], 200);
     }
+
 
     /**
      * @OA\Post(
@@ -107,10 +112,15 @@ class EmailVerificationController extends Controller
     public function resend(Request $request)
     {
         $request->validate([
-            'email' => 'required|email|exists:users,email',
+            'email' => 'required|email',
         ]);
 
-        $user=User::where('email',$request->email)->first();
+        $user = User::where('email',$request->email)->first();
+
+        if(!$user)
+        {
+            return response()->json(['message' => 'User not found.'], 404);
+        }
 
         /*$user = $request->user();*/
 
