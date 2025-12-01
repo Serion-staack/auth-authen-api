@@ -422,7 +422,7 @@ class AuthorizationController extends Controller
         $user->login_blocked_until = null;
         $user->save();
 
-        $user->tokens()->delete();  //fshihet tokeni i vjeter dhe me pas gjenerohet token i ri,me qellimin qe te mos kete akoma akses me tokenin e vjeter ,por te marri aksesin me tokenin e ri.
+        $user->tokens()->delete();  //fshihet token-s te vjeter dhe me pas gjenerohet token-s te rinj,me qellimin qe te mos kete akoma akses me token-sat e vjeter ,por te marri aksesin me token-s te rinj.
 
         $token = $user->createToken('auth_token')->plainTextToken;
 

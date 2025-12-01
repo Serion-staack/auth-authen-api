@@ -37,9 +37,8 @@ use Illuminate\Support\Facades\Route;
     Route::get('/user', [AuthorizationController::class, 'user']);
     Route::put('/update_user/{id}', [AuthorizationController::class, 'updateUser']);
     Route::delete('/delete_user/{id}', [AuthorizationController::class, 'deleteUser']);
-    Route::middleware(['is_admin'])->group(function () {
-        Route::get('/get_all_users', [AuthorizationController::class, 'getAllUsers']);
-    });});
+    Route::middleware(['is_admin'])->get('/get_all_users', [AuthorizationController::class, 'getAllUsers']);
+    });
 
     Route::middleware(['auth:sanctum','token_expiry'])->post('/refresh', [AuthorizationController::class, 'refresh']);
 
