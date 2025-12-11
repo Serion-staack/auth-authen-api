@@ -20,6 +20,8 @@ return new class extends Migration
             $table->timestamp('verification_code_expired_at')->nullable();
             $table->string('notes')->nullable();
             $table->string('address')->nullable();
+            $table->string('google_id')->nullable();
+            $table->tinyInteger('approved_google_login')->default(2);
             $table->foreignId('role_id')->nullable()->index()->references('id')->on('roles');
             $table->string('phone_number')->nullable();
             $table->string('password');
@@ -28,6 +30,9 @@ return new class extends Migration
             $table->timestamp('login_code_expires_at')->nullable();
             $table->integer('login_attempts')->default(0);
             $table->timestamp('login_blocked_until')->nullable();
+            $table->boolean('alert_login')->default(false);
+            $table->dateTime('last_login')->nullable();
+            $table->rememberToken();
             $table->softDeletes();
             $table->timestamps();
         });
